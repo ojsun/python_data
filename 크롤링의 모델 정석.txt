@@ -1,9 +1,9 @@
 0. 크롤링의 모델 정석
-** impotr 할것 (대부분)
+** import 할것 (대부분)
 from bs4 import BeautifulSoup             **BeautifulSoup의 파써( html.parser )
 pip install html5lib  lxml                      **파써( html5lib/ lxml )
-import requests,                		        ** 불러오기  ( requests, urlopen  )          
-from urllib.request import urlopen           결국 urllib와 urlopen   
+import requests,                		        **   1방법)  requests.get(url)         
+from urllib.request import urlopen           	2방법)  urlopen(url)  urllib.request   
 import json
 
 ** select / select_all   find_all / find
@@ -22,7 +22,7 @@ print(content.text)
 							html =urlopen(url)         
 									        	또는   response = requests.get(url) 
 									        	이후   html =response.content  
-3. 데이터에서 정보 가공 후 추출     	bs_obj= BeautifulSoup (html, "html.parser")
+3. 데이터에서 정보 가공 후 추출     		bs_obj= BeautifulSoup (html, "html.parser")
 							title =bs_obj.select_one ("div > h1")
 							print(html.read())         또는 print(content.text)
 4. 추출정보를 csv 또는 db 등에 저장,가공,시각화

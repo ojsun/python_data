@@ -1,0 +1,4 @@
+
+--초기명령/cloudtype 서버
+python3 manage.py migrate community 0001&&python3 manage.py migrate contenttypes 0001&&python3 manage.py migrate service 0001
+
