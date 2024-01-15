@@ -174,3 +174,103 @@ def insert_maria(result):
 
     conn.commit()
     conn.close()
+
+
+###Kakao developers --API 관련 실습/ 카카오지도-카테고리 검색 등
+size= 5
+page= 1
+while True:
+    url='https://dapi.kakao.com/v2/local/search/category.json'   #키워드 검색은 /keyword.json
+    restapi_key = "bd88efd8afb2711bbd519fd5cdaeb4e1"
+    params = {  'category_group_code' : 'FD6',                         #"query": '편의점',
+                "x" :'127.06283102249932',
+                "y" :'37.514322572335935',
+                "radius": '1000',
+                "size": size,
+                "page": page
+             }
+    headers = {"Authorization": "KakaoAK " + restapi_key}    #KakaoAK 위에 한칸 띄우기
+    response=requests.get(url, params=params,headers=headers)
+
+    for item in response.json()['documents']:
+        print(item['place_name'])
+    if not response.json()['meta']['is_end']:
+        page+=1
+    else:
+        break
+
+### 실습) G마켓, 숨겨진 정보 크롤링 /그림 다운로드는 urllib가 requests보다 좀 나음
+url='https://www.gmarket.co.kr/n/best'
+response=requests.get(url)
+bs=BeautifulSoup(response.content, "html.parser")
+images =bs.select('img.image__lazy')
+best_items=[]
+for image in images:
+    img_url = 'https:' + image.get('src')
+    title= image.get('alt')
+    best_items.append([title, img_url])
+best_items[:3]
+
+# 이미지 저장하기-blob, clob 형태로 DB 또는 파일에 저장
+# 파일로 다운로드하기
+for num, item in enumerate(best_items):
+    response = requests.get(item[1])
+    with open(f'images/{num}.jpeg','wb') as f:
+        f.write(response.content)
+
+# urlretrieve는 이미지 미디어파일 다운로드하는데 사용되은 모듈(자동 다운로드)
+# 엄청 빠름/간결하고
+from urllib.request import urlopen, urlretrieve
+for num, item in enumerate(best_items):
+    urlretrieve(item[1],f'images_2/{num}.jpeg')
+# DB에 이미지 저장하기
+import pymysql
+conn = pymysql.connect(user = 'maria',
+                        password = '1234',
+                        host = 'localhost',
+                        port = 3306,
+                        database = 'test_db'
+                        )
+cursor = conn.cursor()
+
+### 상품별 리뷰(상품평) 크롤링  --집에서 보강할것
+url = 'https://item.gmarket.co.kr/Review/Premium'
+
+for item in best_items:
+    params = {'goodsCode' : item[0], 'pageNo' : 1, 'sort': 0, 'totalPage':9999}
+    response = requests.post(url, params = params)
+    print(response)
+    break
+
+all_revies = []
+review = BeautifulSoup(response.content, 'html.parser')
+rows = review.select('table > tbody tr')
+for row in rows:
+    title = row.select_one('td p:nth-child(1)').text.strip()
+    content = row.select_one('td p:nth-child(3)').text.strip()
+    all_revies.append([title, content])
+
+# DB 저장
+import pymysql
+conn = pymysql.connect(user = 'maria', 
+                        password = '1234',
+                        host = 'localhost',
+                        port = 3306,
+                        database = 'python_db')
+cursor = conn.cursor()
+sql = '''insert into reviews (title, content) values (%s, %s)'''
+cursor.execute(sql, all_revies[0])
+conn.commit()
+
+conn.close()
+sql = '''insert into g_market values (%s)'''
+cursor.execute(sql, [response.content])
+conn.commit()
+
+# DB에서 이미지 가져오기
+cursor.execute('''select image from g_market''')
+img= cursor.fetchone()
+img         # 바이어리 형태임
+
+
+
