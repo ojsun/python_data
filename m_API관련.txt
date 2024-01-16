@@ -175,7 +175,6 @@ def insert_maria(result):
     conn.commit()
     conn.close()
 
-
 ###Kakao developers --API 관련 실습/ 카카오지도-카테고리 검색 등
 size= 5
 page= 1
@@ -198,7 +197,7 @@ while True:
         page+=1
     else:
         break
-
+-------------------------------------------------
 ### 실습) G마켓, 숨겨진 정보 크롤링 /그림 다운로드는 urllib가 requests보다 좀 나음
 url='https://www.gmarket.co.kr/n/best'
 response=requests.get(url)
@@ -223,7 +222,8 @@ for num, item in enumerate(best_items):
 from urllib.request import urlopen, urlretrieve
 for num, item in enumerate(best_items):
     urlretrieve(item[1],f'images_2/{num}.jpeg')
-# DB에 이미지 저장하기
+----------------------------------------------------------
+# DB에 이미지 저장하기(모델)
 import pymysql
 conn = pymysql.connect(user = 'maria',
                         password = '1234',
@@ -232,7 +232,7 @@ conn = pymysql.connect(user = 'maria',
                         database = 'test_db'
                         )
 cursor = conn.cursor()
-
+----------------------------------------------
 ### 상품별 리뷰(상품평) 크롤링  --집에서 보강할것
 url = 'https://item.gmarket.co.kr/Review/Premium'
 
@@ -261,8 +261,9 @@ cursor = conn.cursor()
 sql = '''insert into reviews (title, content) values (%s, %s)'''
 cursor.execute(sql, all_revies[0])
 conn.commit()
-
 conn.close()
+--------------------------------------
+#DB 저장 예
 sql = '''insert into g_market values (%s)'''
 cursor.execute(sql, [response.content])
 conn.commit()
