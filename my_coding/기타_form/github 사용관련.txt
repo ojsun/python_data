@@ -1,0 +1,30 @@
+github 사용관련
+
+1> 기초 사용법 -- 
+  사용하고자 하는 폴더 위에서 git-bash 또는 cmd와 연결
+  처음 사용이면 저장소 만들기
+	git init
+ 원격 저장소 내용 완전 복제하기
+	git clone 사용자명@github 주소
+ 변경내용 저장하기
+	git add *  --> git commit -m " 내용 " --> git push (origin master 또는 branch 이름)
+
+2> branch 사용법  --만들고 보내고 병합한 뒤 지우고
+	git chechout -b 생성할 새 branch 이름   --> 새 브런치로 들어가 작업가능
+	git checkout master    ---> 마스터로 돌아가기
+        git branch -d 가지 이름    ---> 삭제
+      	git pull    --> branch에서 github의 변경내용을 가져오기
+<중요> 다른 branch의 변경내용을 master에 뱡합하기 
+    	git merge 다른 가지 이름	
+  	git diff 원래가지이름 비교대상가지  -->변경 내용 확인하기
+
+
+** 학원에 가서 설정하기
+  0. 모두 지움!!!!
+  1. 처음부터 하기
+     	git init  --> git clone URL (http://github.com/ojsun/python_data.git
+  2. 학원작업 후
+	git add *  --> commit  --> push
+
+
+	
