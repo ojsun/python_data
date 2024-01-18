@@ -9,3 +9,7 @@ np.array([  ]) 넘파이형으로 부름
 .ndim  배열 차원 확인
 .size   배열 요소 갯수
 
+ndarray[rank][row][col]  다차원 배열
+
+
+
