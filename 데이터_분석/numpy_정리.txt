@@ -1,0 +1,11 @@
+
+Numpy
+
+import numpy as np
+
+np.array([  ]) 넘파이형으로 부름
+.dtype   타입을 알수있고 속성 지정까지 가능
+.shape 배열크기 확인
+.ndim  배열 차원 확인
+.size   배열 요소 갯수
+
