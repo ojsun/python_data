@@ -70,7 +70,8 @@ def translate(msg, source = "ko", target = "en"):
 
 translate('만들면서 배우는 웹 개발 A to Z')
 
-==== kakao 지도서비스                    ===1/15 첨가 **webapi/ geolocation 매우 지리적 api에 큰역할 함
+==== kakao 지도서비스                    
+===1/15 첨가 **webapi/ geolocation 매우 지리적 api에 큰역할 함
 restapi_key = "bd88efd8afb2711bbd519fd5cdaeb4e1"
 url = "https://dapi.kakao.com/v2/local/search/address.json"
 params = { "query": '집현동로 77' }
