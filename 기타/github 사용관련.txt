@@ -22,6 +22,9 @@ github 사용관련
 	git switch master 하고
         git merge main 
 
+*** 원격저장소의 불필요한 폴더 파일 삭제
+git rm --cached -r 폴더명 or 파일명
+
 ** 학원에 가서 설정하기
   0. 모두 지움!!!!
   1. 처음부터 하기
