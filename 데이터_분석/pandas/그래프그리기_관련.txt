@@ -1,0 +1,71 @@
+<matplotlib 로 그래프 작업할때 상용>
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+plt.rcParams['figure.figsize']=(4,3)  # figure 사이즈 변경
+plt.rcParams['scatter.marker']='*'
+
+#한글 폰트 적용하기/ 보통  맑은 고딕체 사용
+from matplotlib import font_manager, rc
+font = 'C:/Windows/Fonts/Malgun.ttf'
+font_name = font_manager.FontProperties(fname=font).get_name()
+rc('font', family=font_name)
+
+<matplotlib 주요 패턴>
+1. 그림판 만들기                        		fig=plt.figure()
+2. 그림판 하부plot(여러개)           		fig.add_subplot(2,1,1)
+3. 그래프:   	예)	plt.plot(x,y,'r.-.', data=df)
+			plt.title('Boxplot')
+			plt.xlabel('Gender')
+			plt.ylabel('Total_bill')
+
+<saeborn 주요 패턴>
+fig=plt.figure()      
+axes=fig.add_subplot(1,1,1)   => 이렇게 변수axes에 넣어야 하부명령 가능
+axes.hist(data=tips, x='total_bill', bins=10,) 
+axes.set_title('Histogram of Total Bill')
+axes.set_xlabel('청구서 합계')
+
+-----------------------------------------------------
+
+<그래프 종류별 쓰임새>
+plot(linechart) :  수치형 & 연속형데이터
+		시계열 또는 데이터의 흐름에 따라 변화하는 수치를 확인하는 그래프
+        	수치형/연속형 데이터가 적합, 특히 시계열/ 단변량 데이터 유용
+histogram   : 단일 수치형
+		숫자형 데이터의 분포와 빈도를 표현 
+        	(수치형/연속형 데이터/ 단변량에 가장 적합)
+boxplot  : 단일 수치형 또는 범주형(label) & 수치형(x)
+		집단간의 분포 차이를 표현/데이터 분포확인/이상치 확인 위한 그래프
+bar 그래프 : 수치형(height) & 범주형(x)
+		범주형 데이터 간의 수치형 값의 차이를 비교하기 위한 그래프
+		(수치형/ 범주형 모두 가능)  
+scatter : 수치형 데이터(2개 이상)
+		산점도- 두 집단의 분포를 확인하는데 사용 
+		수치형 2개 이상 데이터 간의 분포를 확인하는 그래프
+pie 그래프:  수치형(x) & 범주형(label)
+		범주형데이터 간의 수치형 값의 비율차이를 비교하기 위한 그래프
+		seaborn에는 pie plot 없음	
+
+--------------------------------------------------------
+* 자료형 종류
+ 1) 수치형 : 이산형: 셀 수 있는 숫자형  (예: 정수)
+         	  연속형: 키, 몸무게, 날씨, 시간 등  (예: 실수)
+ 2) 범주형 : 카테고리형 (주로 문자형)
+	-- 순위형 자료: 평점 선호도 
+              -- 명목형 자료: 혈액형, 성별/ 문자로 구별할 있는 
+
+------------------------------------------------------
+<팁 & 주의할 점>
+# seaborn에서도 겹치는 부분 간격 확보! 꼭 plt.tight_layout() 해야
+plt.tight_layout()  
+
+#   순서 지키도록
+  legend 등 기본 그래프가 그려진 뒤에 작동하도록
+  순서를 마지막 쪽에 놓는다.   
+  figure는 앞으로, sunplot은 꼭  plt,plot 앞에 있어야 
+
+# pie 차트 그릴때 : 소수 두자리 %로 나타내고 싶을때 
+autopct = '%.2f%%'
+기타 옵션: autopct = '%.2f%%', startangle = 90, counterclock = False,
+explode = [0.07, 0.05], shadow = True
