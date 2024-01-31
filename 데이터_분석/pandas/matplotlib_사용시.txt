@@ -1,0 +1,48 @@
+<matplotlib 로 그래프 작업할때 사용>
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+plt.rcParams['figure.figsize']=(4,3)  # figure 사이즈 변경
+plt.rcParams['scatter.marker']='*'
+
+#한글 폰트 적용하기/ 보통  맑은 고딕체 사용
+
+from matplotlib import font_manager, rc
+font = 'C:/Windows/Fonts/Malgun.ttf'
+font_name = font_manager.FontProperties(fname=font).get_name()
+rc('font', family=font_name)
+
+
+# seaborn에서도 겹치는 부분 간격 확보! 꼭 plt.tight_layout() 해야
+plt.tight_layout()  
+
+#   순서 지키도록
+  legend 등 기본 그래프가 그려진 뒤에 작동하도록
+  순서를 마지막 쪽에 놓는다.   
+  figure는 앞으로, sunplot은 꼭  plt,plot 앞에 있어야 
+
+# 그래프 종류별 쓰임새
+plot(linechart) : 시계열 또는 데이터의 흐름에 따라 변화하는 수치를 확인하기 위한 그래프
+                    수치형/연속형 데이터가 적합, 특히 시계열/ 단변량 데이터 유용
+histogram   : 단일 수치형
+	숫자형 데이터의 분포와 빈도를 표현 
+                  (수치형/연속형 데이터/ 단변량에 가장 적합)
+Box plot : 집단간의 분포 차이를 표현하기 위해/ 이상치 확인 위한
+	    (수치형/연속형)
+bar 그래프 : 집단간의 비율(많고 적음)을 비교, 표현
+	   (수치형/ 범주형 모두 가능) 
+	   범주형데이터 간의 수치형 값의 차이를 비교하기 위한 그래프 
+파이그래프:  집단간의 비율 비교
+	범주형데이처간의 수치형 값의 비율차이를 비교하기 위한 그래프
+	seaborn에는 pie plot 없음	
+scatter : 산점도- 두 집단의 분포를 확인하는데 사용 
+	수치형 데이터 2개 이상 : 분포를 확인하는 그래프
+
+* 자료형 종류
+ 1) 수치형 : 이산형: 셀 수 있는 숫자형  (예: 정수)
+         	  연속형: 키, 몸무게, 날씨, 시간 등  (예: 실수)
+ 2) 범주형 : 카테고리형 (주로 문자형)
+	-- 순위형 자료: 평점 선호도 
+              -- 명목형 자료: 혈액형, 성별/ 문자로 구별할 있는 
+
