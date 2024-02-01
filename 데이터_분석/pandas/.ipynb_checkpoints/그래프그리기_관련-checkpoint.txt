@@ -61,6 +61,7 @@ scatter : 수치형 데이터(2개 이상)
 		산점도- 두 집단의 분포 및 데이터간의 연관성 확인
 		수치형 2개 이상 데이터 간의 상관관계 확인(분포 등) 그래프
 density
+lmplot
 
 <seaborn>
 scatterplot
