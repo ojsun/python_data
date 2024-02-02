@@ -1,0 +1,8 @@
+
+#Anderson
+
+AndersonResult(statistic=122.16962721459197, critical_values=array([0.573, 0.653, 0.784, 0.914, 1.087]), significance_level=array([15. , 10. ,  5. ,  2.5,  1. ]), fit_result=  params: FitParams(loc=32.204207968574636, scale=49.693428597180905)
+ success: True
+ message: '`anderson` successfully fit the distribution to the data.')
+
+==> 

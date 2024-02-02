@@ -1,6 +1,9 @@
 <matplotlib 로 그래프 작업할때 상용>
-import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 import seaborn as sns
+import matplotlib.pyplot as plt
+import warnings
 
 plt.rcParams['figure.figsize']=(4,3)  # figure 사이즈 변경
 plt.rcParams['scatter.marker']='*'
@@ -10,6 +13,9 @@ from matplotlib import font_manager, rc
 font = 'C:/Windows/Fonts/Malgun.ttf'
 font_name = font_manager.FontProperties(fname=font).get_name()
 rc('font', family=font_name)
+
+warnings.filterwarnings('ignore')
+sns.set_palette('Paired')
 
 <matplotlib plt.>
 1. 그림판 만들기                        		fig=plt.figure()
@@ -113,7 +119,7 @@ autopct = '%.2f%%'
 explode = [0.07, 0.05], shadow = True
 
 # 그래프를 그릴때는 숫자만 필요하므로 .value_counts()함수 사용하여 숫자만 가져오는 것도 괜찮음 
-tips['sex'].value_counts()
+tips['sex'].value_counts() ==> 남녀로 각각 숫자 넘김
 
 # diff() : 간격 조정 가능람 / 옮기고 게산(뺄셈)   ==> 총 갯수는 안바뀜
 # shift() : 데이터를 한칸 등  옮김/ 인덱스가 위아래로 바꿔줄 수 있음 --움직이는 것만 ==갯수는 안바뀜
