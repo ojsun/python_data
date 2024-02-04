@@ -1,0 +1,22 @@
+단변량(일변량) 데이터 분석 방법 <수치형(연속형) 데이터>
+
+기초통계량 : 평균, 표준편차, 4분위수, 최대값, 최소값
+그래프: 히스토그램, 밀도곡선, 박스그래프
+정규성 검정(shapiro, Anderson) : 이변량데이터분석에서 수치형 데이터가 정규성 유무로 통계 검정함수가 달라지기 때문에 해봐야
+<범주형 데이터>
+
+기초통계값 :개별(범주별), 비율
+그래프 : 막대그래프(countplot), pie
+별도의 검정은 없고 /범주별 비율이 균등한지를 확인하고 데이터분석을 진행 함
+
+<이상치 제거>
+1. 이상치 판단/ IQR 이용해서 제거
+IQR=titanic['Fare'].quantile(0.75) - titanic['Fare'].quantile(0.25)
+high_border = titanic['Fare'].quantile(0.75) + IQR * 1.5
+low_border =  titanic['Fare'].quantile(0.25) - IQR * 1.5
+titanic1 = titanic[(titanic['Fare'] < high_border) & (titanic['Fare'] > low_border)]
+
+2. z_score
+import numpy as np
+z_score = np.abs(titanic['Fare'] - titanic['Fare'].mean()) / titanic['Fare'].std()
+titanic3 = titanic[z_score < 1.5]
