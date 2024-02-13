@@ -6,7 +6,10 @@ import matplotlib.pyplot as plt
 import warnings
 
 plt.rcParams['figure.figsize']=(4,3)  # figure 사이즈 변경
-plt.rcParams['scatter.marker']='*'
+
+warnings.filterwarnings('ignore')
+sns.set_palette('Paired')
+
 
 #한글 폰트 적용하기/ 보통  맑은 고딕체 사용
 from matplotlib import font_manager, rc
@@ -14,8 +17,6 @@ font = 'C:/Windows/Fonts/Malgun.ttf'
 font_name = font_manager.FontProperties(fname=font).get_name()
 rc('font', family=font_name)
 
-warnings.filterwarnings('ignore')
-sns.set_palette('Paired')
 
 <matplotlib plt.>
 1. 그림판 만들기                        		fig=plt.figure()
