@@ -1,0 +1,60 @@
+텍스트데이터
+: 문자로 되어있는 데이터(범주형X)
+ 대표적인 비정형 데이터
+
+1) 지마켓 상품코드 크롤링 -> 데이터수집
+2) 텍스트데이터 분석1: 워드클라우드
+
+<문제점>
+ 1.마스크라는 이미지가 필요함: 클라우드의 모양 잡기
+ 2. 한글에 맞지않는 단어 정리(단어들의 조사 등 필요없는 부분 삭제 )
+  KoNLPy: 파이썬 한국어 자연어처리/ 한국어 자연어 처리 
+        --설치해야 함(사전에 java 깔려있어야)
+    환경설정: JAVA_HOME
+             C:\Program File\Java\jdk17
+
+ 3.불용어(접속사 등) 사전이 필요하다
+
+
+0)준비작업
+from wordcloud import WordCloud
+import matplotlib.pyplot as plt
+from PIL import Image
+font = 'C:/Windows/Fonts/Malgun.ttf'
+
+1) 불러오기
+with open('../data/소나기.txt', 'r', encoding='utf-8') as f:
+    text = f.read()
+wc = WordCloud(font_path=font).generate(text)
+plt.imshow(wc)
+plt.axis('off')
+
+2) mask안에 넣기
+mask= np.array(Image.open('../data/alice_mask.png')) 
+# 0과 255로 구성됨, 0인 검은부분에 워드클라우드 뿌림
+wc = WordCloud(font_path=font, mask=mask).generate(text)
+
+3) 자연어 처리(형태소분석기)  : 총 4가지 있음
+   !pip install konlpy
+    from konlpy.tag import Kkma
+    from konlpy.utils import pprint
+
+  from konlpy.tag import Okt, Hannanum, Kkma, Komoran
+    okt = Okt()    # Twitter -앞으로 사용
+    han=Hannanum()
+    kkma=Kkma()
+    komoran=Komoran()
+    
+    word=okt.morphs(text)   # 동사 포함
+    word2=han.nouns(text)  # 명사
+    word3=kkma.pos(text)    # 모든 형태소 
+    word4=komoran.morphs(text)  #
+
+    print(word[:10])
+    print(word2[:10])
+    print(word3[:10])
+    print(word4[:10])
+
+4) 불용어 사전
+    
+
