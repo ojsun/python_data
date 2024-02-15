@@ -1,0 +1,12 @@
+
+
+
+
+train_test_split(
+    *arrays,           # 데이터 량 무한대
+    test_size=None,    # test와 train이 1을 나눠 가짐
+    train_size=None,
+    random_state=None, # 값을 설정하지 않으면 값 변동됨/ 쓰면 고정됨
+    shuffle=True,      # 데이터를 섞을지 
+    stratify=None,     # 불균등한 데이터를 균등하게 잘라줌
+)
