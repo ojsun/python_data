@@ -1,17 +1,20 @@
 <머신러닝 과정 정리>
 0. 데이터 준비(수집 등)
-1. 데이터 전처리 train_test_split
-  X_train, X_test, y_train, y_test 
-   =train_test_split(DATA, TARGET,test_size = 0.2,random_state = 0)
-2. 머신러닝 : 모델(알고리즘) 선택
+1. 데이터 전처리: 오류데이터 보정, null값 처리 등 데이터 클렌징작업, 
+    LableEncoding, OneHotEncoder, 데이터 스케일링, 정규화 작업
+    StandardScaler, MinMaxScaler
+2. 데이터 분리 및 교차검증 : train_test_split
+3. 머신러닝 : 모델(알고리즘) 선택
   - 모델학습  dt_clf = DecisionTreeClassifier(random_state = 0)
              dt_clf.fit(X_train, y_train)
         ==> 반복수행하며 학습방법을 바꿔 성능향상
   - 예측     pred = dt_clf.predict(X_test)
   - 평가(방법 선택, 기준잡기)  
             acc = accuracy_score(y_test, pred)
+4. 교차검증: KFold, StratifiedKFold
+            cross_val_score, cross_validate, GridSearchCV
 
-3. 완전히 학습종료 후, 테스트 및 배포
+5. 반복 또는 완전히 학습종료 후, 테스트 및 배포
 
 <scikit-learn 파일 구성>
 독립변수: data(값,row)   /feature_names
@@ -20,12 +23,13 @@
 <자주 쓰는 scikit-learn 모듈>
 import sklearn
 from sklearn.datasets import load_iris
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.tree import DecisionTreeRegressor
-from sklearn.model_selection import train_test_split,KFold,StratifiedKFold
-from sklearn.model_selection import cross_val_score, cross_validate, GridSearchCV
+from sklearn.tree import DecisionTreeClassifier,
+                         DecisionTreeRegressor
+from sklearn.model_selection import train_test_split, KFold, StratifiedKFold
+                         cross_val_score, cross_validate, GridSearchCV
 from sklearn.metrics import accuracy_score
-from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import LabelEncoder,OneHotEncoder
+                         StandardScaler,MinMaxScaler
 
 1. 데이터 전처리/데이터셋트 분리
 -df로 만들기 / 사이킷런은 딕셔널리 비슷
@@ -50,6 +54,9 @@ df['target'] = df['target'].apply(lambda x : data['target_names'][x])
     
 * 함수 train_test_split() 
     from sklearn.model_selection import train_test_split
+    X_train, X_test, y_train, y_test 
+       =train_test_split(DATA, TARGET,test_size = 0.2,random_state = 0)
+
     train_test_split(
         *arrays,           # *는 데이터 무한대로 쓸 수 있음
         test_size=None,    # test와 train이 1을 나눠 가짐
@@ -85,36 +92,44 @@ parameters={'max_depth':[1,2,3], 'min_samples_split':[2,3]}
 grid_dtree=GridSearchCV(dtree, param_grid=parameters,cv=3,refit=True)
 
 ## 데이터 전처리
-1. 레이블 인코딩// 필수 전처리 1차원 (종속변수-범주형)
+1. 레이블 인코딩// 필수 전처리 1차원 (종속변수-범주형): 선형회귀에서는 X
 from sklearn.preprocessing import LabelEncoder
 lb_enc=LabelEncoder()
 lb_enc.fit(y)                   # fit은 y의 범주 종류를 저장하는 역할
 label_iris=lb_enc.transform(y)  # 위에서 저장한 범주를 맞는 숫자로 변환
 
-2.원-핫 인코딩: 문자를 숫자로 만들기 위해 희소행렬로 만듦(독립변수-범주형)
+2.원-핫 인코딩: 문자를 숫자로 만들기 위해 2차원 희소행렬로 만듦(독립변수-범주형)
 from sklearn.preprocessing import OneHotEncoder
-items = np.array(items).reshape(-1, 1)       #2차원 
+items = np.array(items).reshape(-1, 1)      
 oh_encoder = OneHotEncoder()
 oh_encoder.fit(items)
-oh_labels = oh_encoder.transform(items)   # .fit_transform()
+oh_labels = oh_encoder.transform(items)  
+oh_labels.toarray()      #희소행렬을 toarray()를 이용하여 밀집행렬로 변환
+==> .fit_transform() 한번에 변환함
 
 # pandas 에서는 자동으로 원핫인코딩 해주누는 함수 .get_dummies
 # get_dummies - 범주형 변수에서 더미변수를 자동으로 만들어주는 함수
   pd.get_dummies(df) 
 
-# 데이터 전처리-표준화(독립변수-숫자 정리) 0에 가깝게 배열됨
-# 수의 값이 끝이 없을때 사용  // 보통 표준화 함
+3. 데이터 전처리-표준화(독립변수-숫자 정리) // 보통 표준화 함
+# 평균은 0에, 분산은 1에 가깝게 배열됨 # 수의 값이 끝이 없을때 사용  
 from sklearn.preprocessing import StandardScaler
 scaler = StandardScaler()
 scaler.fit(iris_df)
 iris_scaled = scaler.transform(iris_df)
+iris_df_scaled = pd.DataFrame(data = iris_scaled, columns = iris.feature_names)
 
-# 데이터 전처리 -정규화 :표준화와 모두 같고 MinMaxScaler() 여기만 다름
+4. 데이터 전처리 -정규화 :표준화와 모두 같고 MinMaxScaler() 여기만 다름
 ** 수의 값이 끝이 있을때 사용 / 무조건 0-1 사이 값임=> 벗어나면 이상치
-from sklearn.preprocessing import StandardScaler
-scaler = StandardScaler()
+from sklearn.preprocessing import MinMaxScaler
+scaler = MinMaxScaler()
 scaler.fit(iris_df)
 iris_scaled = scaler.transform(iris_df)
+iris_df_scaled = pd.DataFrame(data = iris_scaled, columns = iris.feature_names)
+
+** train, test 데이터 스케일링 변환시 유의점 **
+데이터스케일링 변환 후 학습, 테스트 데이터로 분리할 것!!
+안되면, 테스트할때 fit()하지 말고 이미 fit된 scaler객체를 이용하요 transform으로 변환!!
 
 
 
