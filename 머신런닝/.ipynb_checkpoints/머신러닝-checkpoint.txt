@@ -13,7 +13,8 @@
             acc = accuracy_score(y_test, pred)
 4. 교차검증: KFold, StratifiedKFold
             cross_val_score, cross_validate, GridSearchCV
-
+5. 최적의 모델, 방법으로 반복
+     학습,예측,평가 반복하기
 5. 반복 또는 완전히 학습종료 후, 테스트 및 배포
 
 <scikit-learn 파일 구성>
@@ -75,7 +76,7 @@ df['target'] = df['target'].apply(lambda x : data['target_names'][x])
     from sklearn.metrics import accuracy_score
     acc = accuracy_score(y_test, pred)
    
-## 교차검증
+## 교차검증/ 일반화 검증
 1. K_Fold 교차검증
     from sklearn.model_selection import KFold
 2. StratifiedKFold 교차검증
@@ -105,13 +106,18 @@ oh_encoder = OneHotEncoder()
 oh_encoder.fit(items)
 oh_labels = oh_encoder.transform(items)  
 oh_labels.toarray()      #희소행렬을 toarray()를 이용하여 밀집행렬로 변환
-==> .fit_transform() 한번에 변환함
+titanic_df[['female','maie']]= enc.toarray() # 데이터프레임으로 변환
+
+==> .fit_transform() 데이터프레임이 문자형을 한번에 변환함
+    범주형 -> 숫자형으로 변환/ 
+    종속변수, 2개 독립변수 일 경우 Label인코드 // 3개 이상 onehot인코더 사용
+    숫자형 범주 등 미리 .astype('object')으로 문자형으로 바꾸고 할 것
 
 # pandas 에서는 자동으로 원핫인코딩 해주누는 함수 .get_dummies
 # get_dummies - 범주형 변수에서 더미변수를 자동으로 만들어주는 함수
   pd.get_dummies(df) 
 
-3. 데이터 전처리-표준화(독립변수-숫자 정리) // 보통 표준화 함
+3. 데이터 전처리-표준화(독립변수-숫자 정리) // StandardScaler 함
 # 평균은 0에, 분산은 1에 가깝게 배열됨 # 수의 값이 끝이 없을때 사용  
 from sklearn.preprocessing import StandardScaler
 scaler = StandardScaler()
@@ -131,6 +137,15 @@ iris_df_scaled = pd.DataFrame(data = iris_scaled, columns = iris.feature_names)
 데이터스케일링 변환 후 학습, 테스트 데이터로 분리할 것!!
 안되면, 테스트할때 fit()하지 말고 이미 fit된 scaler객체를 이용하요 transform으로 변환!!
 
+
+< 알아 둘 것들 -tip>
+- np.vstack 넘파이 배열을 수직으로 붙이기/합치기(np.hstack은 수평으로 붙이기
+category=np.hstack(('cab_'+ oh_enc.categories_[0],
+                               'em_'+ oh_enc.categories_[1] )) #OneHotEncoder
+
+- StandardScaler 한 후에 결과값은 이상치 제거를 위한 z-score 값과 같음
+  그러므로 2.5 이상, -2.5 이하값 제거 하면 이상치 제거임
+    ==> 이상치 제거 z_score  // titanic_d[titanic_d['Fare'] <=2.5]
 
 
 
