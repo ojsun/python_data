@@ -1,4 +1,4 @@
-<머신러닝 과정 정리>
+   <머신러닝 과정 정리>
 0. 데이터 준비(수집 등)
 1. 데이터 전처리: 오류데이터 보정, null값 처리 등 데이터 클렌징작업, 
     LableEncoding, OneHotEncoder, 데이터 스케일링, 정규화 작업
@@ -99,14 +99,23 @@ lb_enc=LabelEncoder()
 lb_enc.fit(y)                   # fit은 y의 범주 종류를 저장하는 역할
 label_iris=lb_enc.transform(y)  # 위에서 저장한 범주를 맞는 숫자로 변환
 
+=> 방법2) lbe=LabelEncoder()    # 종속 아니어도 독립 2개면 가능
+    titanic['Sex']=lbe.fit_transform(titanic_df['Sex'])
+
 2.원-핫 인코딩: 문자를 숫자로 만들기 위해 2차원 희소행렬로 만듦(독립변수-범주형)
-from sklearn.preprocessing import OneHotEncoder
-items = np.array(items).reshape(-1, 1)      
+
+(간단한 방법) OneHotEncoder: 3개 이상 독립변수 
+oh=OneHotEncoder(sparse_output=False)
+C_B=oh.fit_transform(titanic_df[['Cabin','Embarked']])
+columns=np.hstack(['Cab_' + oh.categories_[0], 'Emb_'+ oh.categories_[1]])
+titanic_df=pd.concat([titanic_df, pd.DataFrame(C_B, columns=columns)], axis=1)
+
+(원칙적 방법)      
 oh_encoder = OneHotEncoder()
 oh_encoder.fit(items)
 oh_labels = oh_encoder.transform(items)  
 oh_labels.toarray()      #희소행렬을 toarray()를 이용하여 밀집행렬로 변환
-titanic_df[['female','maie']]= enc.toarray() # 데이터프레임으로 변환
+titanic_df[['female','male']]= enc.toarray() # 데이터프레임으로 변환
 
 ==> .fit_transform() 데이터프레임이 문자형을 한번에 변환함
     범주형 -> 숫자형으로 변환/ 
@@ -146,6 +155,10 @@ category=np.hstack(('cab_'+ oh_enc.categories_[0],
 - StandardScaler 한 후에 결과값은 이상치 제거를 위한 z-score 값과 같음
   그러므로 2.5 이상, -2.5 이하값 제거 하면 이상치 제거임
     ==> 이상치 제거 z_score  // titanic_d[titanic_d['Fare'] <=2.5]
+    
+- 종속변수와 독립변수 나누기
+X_titanic=titanic_df.drop(['Survived'], axis=1)
+y_titanic=titanic_df['Survived']
 
 
 
