@@ -1,0 +1,276 @@
+
+===네이버에서 검색 ===
+def naver_searching(search_word):
+    url = f'https://search.naver.com/search.naver?where=nexearch&sm=top_hty&fbm=0&ie=utf8&query={search_word}'
+    response = requests.get(url)
+    if response.status_code == 200:
+        search_word_related = []
+        soup = BeautifulSoup(response.content, 'html.parser')
+        items = soup.select_one('ul.lst_related_srch')
+        for item in items.select('li>a'):
+            search_word_related.append({ item.text.strip():  
+                        'https://search.naver.com/search.naver' + item.get('href')})
+         return search_word_related
+    else:
+        print(response.status_code)
+
+naver_searching('삼성전자')
+
+=== API  파파고 번역기 ===
+import requests, json
+import os
+import sys
+import urllib.request
+
+CLIENT_ID = "2mXHw0nAQ0AbErbtjDHH"
+CLIENT_SECRET = "gIsYyg4FNQ"         #app_key 
+
+client_id = "2mXHw0nAQ0AbErbtjDHH" # 개발자센터에서 발급받은 Client ID 값
+client_secret = "gIsYyg4FNQ"                # 개발자센터에서 발급받은 Client Secret 값
+encText = urllib.parse.quote("반갑습니다")
+data = "source=ko&target=en&text=" + encText
+url = "https://openapi.naver.com/v1/papago/n2mt"
+request = urllib.request.Request(url)
+request.add_header("X-Naver-Client-Id",client_id)
+request.add_header("X-Naver-Client-Secret",client_secret)
+response = urllib.request.urlopen(request, data=data.encode("utf-8"))
+rescode = response.getcode()
+if(rescode==200):
+    response_body = response.read()
+    print(response_body.decode('utf-8'))
+else:
+    print("Error Code:" + rescode)
+
+json.loads(response_body.decode('utf-8'))
+
+--위에 코드와 같음-실제 실행/json에 대해
+url = 'https://openapi.naver.com/v1/papago/n2mt'
+msg = "데이터 사이언스는 재미있습니다."
+params = { "source": "ko", "target": "en", "text": msg }
+headers = { "Content-Type": "application/json",
+            "X-Naver-Client-Id": CLIENT_ID,             ==> 먼저 코딩했으면 가능
+            "X-Naver-Client-Secret": CLIENT_SECRET }
+response = requests.post(url, json.dumps(params), headers=headers)
+print(response)
+print(response.json()["message"]["result"]["translatedText"])
+
+
+---번역기 함수 만들기
+def translate(msg, source = "ko", target = "en"):
+    url = "https://openapi.naver.com/v1/papago/n2mt"
+    params = { "source": source, "target": target, "text": msg }
+    headers = {"Content-Type": "application/json",
+    	"X-Naver-Client-Id": CLIENT_ID,
+    	"X-Naver-Client-Secret": CLIENT_SECRET}
+    response = requests.post(url, json.dumps(params), headers=headers)
+    if response.status_code == 200:
+        return response.json()["message"]["result"]["translatedText"]
+    else:
+        return response.status_code
+
+translate('만들면서 배우는 웹 개발 A to Z')
+
+==== kakao 지도서비스                    ===1/15 첨가 **webapi/ geolocation 매우 지리적 api에 큰역할 함
+restapi_key = "bd88efd8afb2711bbd519fd5cdaeb4e1"
+url = "https://dapi.kakao.com/v2/local/search/address.json"
+params = { "query": '집현동로 77' }
+headers = {"Authorization": "KakaoAK " + restapi_key}    #KakaoAK 위에 한칸 띄우기
+response = requests.get(url, headers=headers, params=params)
+response
+
+datas = response.json()
+datas['documents'][0]
+
+## 함수1) 카카오 주소 검색 > 경도, 위도
+def search_location(query):
+    restapi_key = '60b71cac95c11ebfeb2ee9d26ca44bbc'
+    url = "https://dapi.kakao.com/v2/local/search/address.json"
+    params = { "query": query }
+    headers = {"Authorization": "KakaoAK " + restapi_key}
+    response = requests.get(url, headers=headers, params=params)
+    
+    if response.status_code == 200:
+        try:
+            address = response.json()['documents'][0]
+            return float(address['x']), float(address['y'])
+        except:
+            return '검색안됨'
+    else:
+        return response.status_code
+
+search_location('새나루 9단지')
+
+## 함수2) 직방 > geohash > ID를 가져오는 api
+import geohash2
+
+def search_ids(geohash):
+    url = f'https://apis.zigbang.com/v2/items/oneroom'
+
+    params = {'geohash': geohash,
+              'depositMin':'0',
+              'rentMin':'0',
+              'salesTypes' : ['월세', '전세'],
+              'domain':'zigbang',
+              'checkAnyItemWithoutFilter':'true'}
+
+    response = requests.get(url, params)
+    if response.status_code == 200:
+        datas = response.json()['items']
+        ids = [data["itemId"] for data in datas]
+        return ids
+    else:
+        return response.status_code
+
+ids = search_ids(geohash)
+
+## 함수3) ID > 원룸 정보를 가져오는 api
+def search_oneroom(ids):
+    url = "https://apis.zigbang.com/v2/items/list"
+    params = {"item_ids": ids, "domain": "zigbang"}
+    response = requests.post(url, params)
+    result = response.json()
+    final_result = []
+    for item in result['items']:
+        item_id = item['item_id']
+        sales_type = item['sales_type']
+        deposit = item['deposit']
+        rent = item['rent']
+        area = item['전용면적']['m2']
+        address = item['address']
+        final_result.append([item_id, sales_type, deposit, rent, area, address])
+    return final_result
+
+## 텍스트로 저장 함수
+def write_txt(file, result, mode='w'):
+    with open(file, mode, encoding='euc-kr') as f:
+        for item in result: # item = ['월세', 1000, 70, 20.82, '서초구 우면동']
+            item = list(map(str, item))
+            item = ', '.join(item)
+            f.write(item)
+            f.write('\n')
+    print('파일 생성 완료')
+
+## 마리아DB 저장하기  //API직방 월세 결과 내용 저장
+import pymysql
+
+def insert_maria(result):
+    conn = pymysql.connect(user = 'maria',
+                            password = '1234',
+                            host = 'localhost',
+                            port = 3306,
+                            database = 'python_db'
+                            )
+    cursor = conn.cursor()
+
+    sql = '''insert into oneroom values (%s, %s, %s, %s, %s, %s)'''
+    for index, item in enumerate(result):
+        try:
+            cursor.execute(sql, item)
+        except:
+            print('중복데이터 입력 :', item[0])
+            continue
+        if index % 10 == 0:
+            conn.commit()
+
+    conn.commit()
+    conn.close()
+
+
+###Kakao developers --API 관련 실습/ 카카오지도-카테고리 검색 등
+size= 5
+page= 1
+while True:
+    url='https://dapi.kakao.com/v2/local/search/category.json'   #키워드 검색은 /keyword.json
+    restapi_key = "bd88efd8afb2711bbd519fd5cdaeb4e1"
+    params = {  'category_group_code' : 'FD6',                         #"query": '편의점',
+                "x" :'127.06283102249932',
+                "y" :'37.514322572335935',
+                "radius": '1000',
+                "size": size,
+                "page": page
+             }
+    headers = {"Authorization": "KakaoAK " + restapi_key}    #KakaoAK 위에 한칸 띄우기
+    response=requests.get(url, params=params,headers=headers)
+
+    for item in response.json()['documents']:
+        print(item['place_name'])
+    if not response.json()['meta']['is_end']:
+        page+=1
+    else:
+        break
+
+### 실습) G마켓, 숨겨진 정보 크롤링 /그림 다운로드는 urllib가 requests보다 좀 나음
+url='https://www.gmarket.co.kr/n/best'
+response=requests.get(url)
+bs=BeautifulSoup(response.content, "html.parser")
+images =bs.select('img.image__lazy')
+best_items=[]
+for image in images:
+    img_url = 'https:' + image.get('src')
+    title= image.get('alt')
+    best_items.append([title, img_url])
+best_items[:3]
+
+# 이미지 저장하기-blob, clob 형태로 DB 또는 파일에 저장
+# 파일로 다운로드하기
+for num, item in enumerate(best_items):
+    response = requests.get(item[1])
+    with open(f'images/{num}.jpeg','wb') as f:
+        f.write(response.content)
+
+# urlretrieve는 이미지 미디어파일 다운로드하는데 사용되은 모듈(자동 다운로드)
+# 엄청 빠름/간결하고
+from urllib.request import urlopen, urlretrieve
+for num, item in enumerate(best_items):
+    urlretrieve(item[1],f'images_2/{num}.jpeg')
+# DB에 이미지 저장하기
+import pymysql
+conn = pymysql.connect(user = 'maria',
+                        password = '1234',
+                        host = 'localhost',
+                        port = 3306,
+                        database = 'test_db'
+                        )
+cursor = conn.cursor()
+
+### 상품별 리뷰(상품평) 크롤링  --집에서 보강할것
+url = 'https://item.gmarket.co.kr/Review/Premium'
+
+for item in best_items:
+    params = {'goodsCode' : item[0], 'pageNo' : 1, 'sort': 0, 'totalPage':9999}
+    response = requests.post(url, params = params)
+    print(response)
+    break
+
+all_revies = []
+review = BeautifulSoup(response.content, 'html.parser')
+rows = review.select('table > tbody tr')
+for row in rows:
+    title = row.select_one('td p:nth-child(1)').text.strip()
+    content = row.select_one('td p:nth-child(3)').text.strip()
+    all_revies.append([title, content])
+
+# DB 저장
+import pymysql
+conn = pymysql.connect(user = 'maria', 
+                        password = '1234',
+                        host = 'localhost',
+                        port = 3306,
+                        database = 'python_db')
+cursor = conn.cursor()
+sql = '''insert into reviews (title, content) values (%s, %s)'''
+cursor.execute(sql, all_revies[0])
+conn.commit()
+
+conn.close()
+sql = '''insert into g_market values (%s)'''
+cursor.execute(sql, [response.content])
+conn.commit()
+
+# DB에서 이미지 가져오기
+cursor.execute('''select image from g_market''')
+img= cursor.fetchone()
+img         # 바이어리 형태임
+
+
+
