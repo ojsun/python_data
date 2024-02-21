@@ -3,16 +3,25 @@
 앙상블학습 
 1) 보팅 Voting  : 한 데이터셋 + 분류기 다수
 2) 배깅 Bagging  : 여러 데이터 셋 + 1개의 데이터셋 
-3) 부스팅 Boosting : 순차적으로 학습-예측하면서 오류개선하며 가중치 조정.딥러닝 학습방식
- 
+3) 부스팅 Boosting : 순차적으로 학습-예측하면서 오류개선하며 가중치 조정.딥러닝 학습방식 
+4) 스태킹 Stacking : 성능이 비슷한 여러 모델로 작업하여 예측한 값을 최종 모델을 사용
+
 1. DecisionTreeClassifier
 
 from sklearn.tree import DecisionTreeClassifier
+X_data = wine.data
+y_data = wine.target
+X_train, X_test, y_train, y_test = train_test_split(X_data, y_data, 
+                                test_size=0.2, random_state= 156)
 dt_clf = DecisionTreeClassifier(random_state=156)
 dt_clf.fit(X_train , y_train)
 pred = dt_clf.predict(X_test)
 accuracy = accuracy_score(y_test , pred)
 print('결정 트리 예측 정확도: {0:.4f}'.format(accuracy))
+print('예측 정확도: {0:.4f}'.format(accuracy))
+print(f1_score(y_test, pred, average='macro'))
+print( roc_auc_score(y_test, pred_proba, multi_class='ovo'))
+
 
 # GridSearchCV 하이퍼 파라미터 찾기
 from sklearn.model_selection import GridSearchCV
@@ -25,6 +34,9 @@ scores_df[['params', 'mean_test_score', 'rank_test_score']]
 model = grid_dt.best_estimator_
 pred = model.predict(X_test)
 accuracy_score(y_test, pred)
+
+print('GridSearchCV 최적 파라미터 :', grid_dt.best_params_)
+print(f'GridSearchCV 최고 정확도 : {grid_dt.best_score_:.4f}')
 
 # 피처 중요도 그래프 .feature_importances_
 import seaborn as sns
@@ -44,6 +56,12 @@ cross_val_score: 학습데이터 평가점수 vs 테스트데이터 평가점수
 max_dept 적은 수/ min_samples_split: split 하는 최소 샘플 수/ 
                   min_samples_leaf: 리프노드에 있을 최소 샘플갯수
 
+from sklearn.model_selection import cross_val_score
+dt_clf=DecisionTreeClassifier(random_state=0)
+dt_clf.fit(X_train, y_train)
+scores=cross_val_score(dt_clf, X_train, y_train, scoring='accuracy', cv=5)
+print('교차검증 평균 평가',scores.mean())
+print('테스트데이터 평가점수',accuracy_score(y_test, dt_clf.predict(X_test)))
 
 2. ensemble 앙상블
 
@@ -51,19 +69,67 @@ max_dept 적은 수/ min_samples_split: split 하는 최소 샘플 수/
 from sklearn.ensemble import VotingClassifier
 lr_clf = LogisticRegression(solver='liblinear')
 dt_clf = DecisionTreeClassifier(random_state=0)
-vo_clf = VotingClassifier( estimators=[('LR',lr_clf), ('DT',dt_clf)] , voting='soft' )
+knn_clf= KNeighborsClassifier()
+vo_clf = VotingClassifier( estimators=[('LR',lr_clf), ('DT',dt_clf),
+            ('KNN', knn_clf)] , voting='soft' )
 
+X_train, X_test, y_train, y_test = train_test_split(cancer.data, cancer.target, 
+                    test_size=0.2 , random_state= 0)
+vo_clf.fit(X_train , y_train)
+pred = vo_clf.predict(X_test)
+print(f'Voting 분류기 정확도: {accuracy_score(y_test,pred):.4f}')
+
+classifiers = [lr_clf, dt_clf, knn_clf]
+for clf in classifiers:
+    clf.fit(X_train , y_train)
+    pred = clf.predict(X_test)
+    class_name= clf.__class__.__name__
+    print(f'{class_name} 정확도: {accuracy_score(y_test, pred):.4f}')
 
 2) ensemble 학습: RandomForestClassifier
 from sklearn.ensemble import RandomForestClassifier
+cancer = load_breast_cancer()
+X_train, X_test, y_train, y_test = train_test_split(cancer.data, cancer.target, 
+                    test_size=0.2 , random_state= 0)
 rf_clf = RandomForestClassifier(random_state=0)
+rf_clf.fit(X_train , y_train)
+pred = rf_clf.predict(X_test)
+accuracy = accuracy_score(y_test , pred)
+print(f'랜덤 포레스트 정확도: {accuracy:.4f}')
 
 # 랜덤포레스트 파이퍼 파라미터 튜닝 GridSearchCV
+params = {'n_estimators':[100], 'max_depth' : [6, 8, 10, 12], 
+            'min_samples_leaf' : [8, 12, 18 ],'min_samples_split' : [8, 16, 20]}
+rf_clf = RandomForestClassifier(random_state=0)
+grid_cv = GridSearchCV(rf_clf , param_grid=params , cv=3, n_jobs=-1, verbose=True)
+grid_cv.fit(X_train , y_train)
+
+print('GridSearchCV 최적 파라미터:', grid_cv.best_params_)
+print(f'GridSearchCV 최고 정확도: {grid_cv.best_score_:.4f}')
+model = grid_cv.best_estimator_
+pred = model.predict(X_test)
+accuracy_score(y_test, pred)
+
 # 피쳐 중요도 그래프
+ftr_importances_values = rf_clf.feature_importances_
+ftr_importances = pd.Series(ftr_importances_values, index=cancer.feature_names )
+ftr_top20 = ftr_importances.sort_values(ascending=False)[:20]
+plt.figure(figsize=(8,6))
+plt.title('Feature importances Top 20')
+sns.barplot(x=ftr_top20 , y = ftr_top20.index)
 
 3) ensemble 학습: GBM/ GradientBoostingClassifier
 from sklearn.ensemble import GradientBoostingClassifier
-gb_clf = GradientBoostingClassifier(random_state=0)
+cancer = load_breast_cancer()
+X_train, X_test, y_train, y_test = train_test_split(cancer.data, cancer.target, 
+                    test_size=0.2 , random_state= 0)
+gb_clf = GradientBoostingClassifier( n_estimators=200, random_state=0)
+gb_clf.fit(X_train , y_train)
+gb_pred = gb_clf.predict(X_test)
+gb_accuracy = accuracy_score(y_test, gb_pred)
+
+print(f'GBM 정확도: {gb_accuracy:.4f}')
+
 
 
 4) ensemble 학습: XGBoodt
@@ -72,6 +138,7 @@ from xgboost import plot_importance
 
 
 # 그래프 그리기
+
 
 5) ensemble 학습: 래퍼 XGBClassifier 
 from xgboost import XGBClassifier 
