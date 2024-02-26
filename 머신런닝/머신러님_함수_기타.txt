@@ -1,0 +1,176 @@
+1. 분류_함수들
+1) 상위 4개의 개별 학습/예측/평가
+def model_fit_predict(model, X_train, y_train, X_test):
+    model.fit(X_train, y_train)
+    pred = model.predict(X_test)
+    pred_proba = model.predict_proba(X_test)
+    return pred, pred_proba
+
+def get_clf_eval(y_test, pred, pred_proba=None, binary = True):
+    accuracy = accuracy_score(y_test , pred)
+    if binary:
+        confusion=confusion_matrix(y_test, pred)
+        precision = precision_score(y_test , pred)
+        recall = recall_score(y_test , pred)
+        f1 = f1_score(y_test,pred)
+        if pred_proba.any():
+            roc_auc = roc_auc_score(y_test, pred_proba[:, 1])
+    else:
+        precision = precision_score(y_test , pred, average = 'macro')
+        recall = recall_score(y_test , pred, average = 'macro')
+        f1 = f1_score(y_test,pred, average = 'macro')
+        if pred_proba.any():
+            roc_auc = roc_auc_score(y_test, pred_proba, multi_class = 'ovo')
+    print(f'정확도: {accuracy:.4f}, 오차행렬: {confusion:.4f}, 정밀도: {precision:.4f}, 재현율: {recall:.4f}')
+    print(f'F1: {f1:.4f}, AUC:{roc_auc:.4f}')
+    
+2) 여러개의 임곗값 조정하기
+    thresholds = [0.4, 0.45, 0.50, 0.55, 0.60]
+    def get_eval_by_threshold(y_test ,pred_proba_c1,thresholds):
+        for custom_threshold in thresholds:
+            binarizer = Binarizer(threshold = custom_threshold).fit(pred_proba_c1) 
+            custom_predict = binarizer.transform(pred_proba_c1)
+            print('임곗값:',custom_threshold)
+            get_clf_eval(y_test , custom_predict)
+
+    get_eval_by_threshold(y_test ,pred_proba[:,1].reshape(-1,1), thresholds )
+
+3) precision_recall_curve를 이용한 재현율,정밀도 곡선
+    def precision_recall_curve_plot(y_test , pred_proba_c1):
+        precisions, recalls, thresholds = precision_recall_curve(y_test, pred_proba_c1)
+        plt.figure(figsize=(8,6))
+        threshold_boundary = thresholds.shape[0]
+        plt.plot(thresholds, precisions[0:threshold_boundary], '--', label='precision')
+        plt.plot(thresholds, recalls[0:threshold_boundary], label='recall')
+        start, end = plt.xlim()
+    precision_recall_curve_plot(y_test, lr_clf.predict_proba(X_test)[:, 1] )
+
+4) roc_curve 
+    def roc_curve_plot(y_test , pred_proba_c1):
+        fprs , tprs , thresholds = roc_curve(y_test ,pred_proba_c1)
+        plt.plot(fprs , tprs, label='ROC')
+        plt.plot([0, 1], [0, 1], 'k--', label='Random') 
+        start, end = plt.xlim()
+        plt.xticks(np.round(np.arange(start, end, 0.1),2))
+        plt.show()
+
+
+2. 회귀- 함수들
+1) 예측성능 측정/평가 함수 : mean_squared_error, mean_absolute_error, r2_score, 
+ root_mean_squared_error, root_mean_square_log_error
+
+ # RMSLE(root_mean_squar_log_error) 함수
+def rmsle (y, pred):
+    log_y=np.log1p(y)
+    log_pred=np.log1p(pred)
+    squared_error=(log_y-log_pred)**2
+    rmsle=np.sqrt(np.mean(squared_error))
+    return rmsle
+    
+ # RMSE(root_mean_squared_error) 함수
+def rmse(y, pred): 
+    return np.sqrt(mean_squared_error(y, pred))
+
+ # 모든 예측성능 측정 함수
+def evaluate_regr(y,pred):
+    rmsle_val=rmsle(y,pred)
+    rmse_val=rmse(y,pred)
+    mae_val=mean_absolute_error(y,pred)
+    r2_val=r2_score(y,pred)
+    print('RMSLE: {0:.2f}, RMSE: {1:.2f}, MAE: {2:.2f}, R2: {3:.2f}'.format(rmsle_val,rmse_val, mae_val, r2_val)) 
+
+2) 실제값과 예측값의 차이 확인
+def get_top_error_data(y_test, pred, n_top=5):
+    result_df=pd.DataFrame(y_test.values, columns=['real_count'])
+    result_df['pred_count']=np.round(pred)
+    result_df['diff']=np.abs(result_df['real_count'] - result_df['pred_count'])
+    print(result_df.sort_values('diff', ascending=False)[:n_top])
+
+# 적용: 개별 featuer의 회귀계수값 시각화
+coef=pd.Series(lr_reg.coef_, index=X_features.columns)
+coef_sort=coef.sort_values(ascending=False)
+sns.barplot(x=coef_sort.values, y=coef_sort.index)
+
+3) alpha값에 따른 성능 변화
+alphas=[0,0.1,1,10,100]
+for alpha in alphas:
+    ridge=Ridge(alpha=alpha)
+    neg_mse_scores=cross_val_score(ridge,X_features, y_target, scoring='neg_mean_squared_error',cv=5)
+    avg_rmse= np.mean(np.sqrt(-1*neg_mse_scores))
+    print(f'alpha {alpha} 일 때 5fold의 평균 RMSE: {avg_rmse:.3f}')
+
+4) 모델과 학습/테스트 데이터세트를 입력하면 성능평가 수치 반환
+def get_model_predict(model, X_train, X_test,  y_train, y_test, is_expm1=False):
+    model.fit(X_train,y_train)
+    pred=model.predict(X_test)
+    if is_expm1:
+        y_test=np.expm1(y_test)
+        pred=np.expm1(pred)
+    print(model.__class__.__name__)
+    evaluate_regr(y_test, pred)
+
+5) alpha값에 따는 회귀모델의 폴드평균 RMSE를 출력/회귀계수들을 Dataframe으로 반환
+def get_linear_reg_eval(model_name, params=None, X_data=None, y_target=None, 
+                        verbose=True, return_coeff=True):
+    coeff_df=pd.DataFrame()
+    if verbose : print(model_name)
+    for param in params:
+        if model_name == 'Ridge': model = Ridge(alpha=param)
+        elif model_name == 'Lasso' : model = Lasso(alpha=param)
+        elif model_name == 'ElasticNet' : model = ElasticNet(alpha=param, l1_ratio=0.7)
+        neg_mse_scores = cross_val_score(model, X_data, y_target, 
+                                         scoring='neg_mean_squared_error', cv=5)
+        avg_rmse=np.mean(np.sqrt(-1*neg_mse_scores))
+        print('alpha {0}일때 5폴드 평균 RMSE: {1:.3f}'.format(param, avg_rmse))
+        
+        model.fit(X_data,y_target)
+        if return_coeff:
+            coeff=pd.Series(data=model.coef_, index=X_data.columns)
+            colname='alpha:'+str(param)
+            coeff_df[colname]=coeff
+    return coeff_df
+
+    #적용
+    alphas=[0.07,0.1,0.5,1,3]
+    coeff_lasso_df=get_linear_reg_eval('Lasso',params=alphas, X_data=X_features, y_target=y_target)
+
+6) 선형회귀모델의 스케일링,정규화 함수-중요 피처나 타겟값이 왜곡되었을때
+from sklearn.preprocessing import StandardScaler, MinMaxScaler, PolynomialFeatures
+
+def get_scaled_data(method=None,p_degree=None, input_data=None):
+    if method =='Standard':
+        scaled_data=StandardScaler().fit_transform(input_data)
+    elif method =='MinMax':
+        scaled_data=MinMaxScaler().fit_transform(input_data)
+    elif method =='Log':
+        scaled_data=np.log1p(input_data)
+    else: scaled_data=input_data
+    
+    if p_degree !=None:
+        scaled_data=PolynomialFeatures(degree=p_degree, 
+                                       include_bias=False).fit_transform(scaled_data)
+    return scaled_data
+
+    # 적용
+    X_data_scaled=get_scaled_data('Log',input_data=X_features)
+    alphas=[0.1,1,10,100]
+    get_linear_reg_eval('Ridge',params=alphas, X_data=X_data_scaled,y_target=y_target, verbose=False, return_coeff=False)
+    
+
+3.기타 
+1) 시각화
+fig, axis=plt.subplots(figsize=(12,6),ncols=4, nrows=2)
+cat_f=['season','holiday','workingday','weather','year','month','day','hour']
+for i, feature in enumerate(cat_f):
+    row = int(i/4)
+    col = i%4
+    sns.barplot(x=feature, y='count', data=bike_df, ax=axis[row][col])
+plt.tight_layout
+
+2) float64 에러 치료 -- 난 안됨
+def clean_dataset(df):
+    assert isinstance(df, pd.DataFrame), "df needs to be a pd.DataFrame"
+    df.dropna(inplace=True)
+    indices_to_keep = ~df.isin([np.nan, np.inf, -np.inf]).any(axis=1)
+    return df[indices_to_keep].astype(np.float64)
+clean_dataset(X_features_ohe)

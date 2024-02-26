@@ -1,22 +1,260 @@
 < 분류-알고리즘들>
+import sklearn
 
+# 기본(불러오기,선택,검증 등)
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split,KFold,StratifiedKFold
+from sklearn.model_selection import cross_val_score, cross_validate, GridSearchCV
+from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
+from sklearn.metrics import confusion_matrix, precision_score, recall_score
+from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import Binarizer
+from sklearn.base import BaseEstimator
+from sklearn.utils.validation import check_is_fitted
+
+# 알고리즘(지도학습)
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.tree import plot_tree
+from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.ensemble import AdaBoostClassifier
+from sklearn.ensemble import StackingClassifier
+from xgboost import XGBClassifier
+from sklearn.naive_bayes import GaussianNB
+from sklearn.svm import SVC, SVR
+
+# 기타
+import matplotlib.pyplot as plt
+import seaborn as sns
+import pandas as pd
+import numpy as np
+import warnings
+warnings.filterwarnings('ignore')
+
+<기본/ 함수들> ## 불러오기, 자르기, 모델, 학습, 예측 모형! 
+    cancer =load_breast_cancer()
+
+    X_train, X_test, y_train, y_test = train_test_split(cancer.data, cancer.target, 
+                        test_size=0.2 , random_state= 0)
+
+    dt_clf=DecisionTreeClassifier(random_state=0)
+    rf_clf=RandomForestClassifier(random_state=0)
+
+    dt_clf.fit(X_train,y_train)
+    rf_clf.fit(X_train,y_train)
+
+    pred1=dt_clf.predict(X_test)
+    pred2=rf_clf.predict(X_test)
+
+    print('DecisionTree 정확도', accuracy_score(y_test, pred1))
+    print('RandomForest 정확도', accuracy_score(y_test, pred2))
+
+# 상위 4개의 개별 학습/예측/평가
+def model_fit_predict(model, X_train, y_train, X_test):
+    model.fit(X_train, y_train)
+    pred = model.predict(X_test)
+    pred_proba = model.predict_proba(X_test)
+    return pred, pred_proba
+
+def get_clf_eval(y_test, pred, pred_proba=None, binary = True):
+    accuracy = accuracy_score(y_test , pred)
+    if binary:
+        confusion=confusion_matrix(y_test, pred)
+        precision = precision_score(y_test , pred)
+        recall = recall_score(y_test , pred)
+        f1 = f1_score(y_test,pred)
+        if pred_proba.any():
+            roc_auc = roc_auc_score(y_test, pred_proba[:, 1])
+    else:
+        precision = precision_score(y_test , pred, average = 'macro')
+        recall = recall_score(y_test , pred, average = 'macro')
+        f1 = f1_score(y_test,pred, average = 'macro')
+        if pred_proba.any():
+            roc_auc = roc_auc_score(y_test, pred_proba, multi_class = 'ovo')
+    print(f'정확도: {accuracy:.4f}, 오차행렬: {confusion:.4f}, 정밀도: {precision:.4f}, 재현율: {recall:.4f}')
+    print(f'F1: {f1:.4f}, AUC:{roc_auc:.4f}')
+    
+# 여러개의 임곗값 조정하기
+    thresholds = [0.4, 0.45, 0.50, 0.55, 0.60]
+    def get_eval_by_threshold(y_test ,pred_proba_c1,thresholds):
+        for custom_threshold in thresholds:
+            binarizer = Binarizer(threshold = custom_threshold).fit(pred_proba_c1) 
+            custom_predict = binarizer.transform(pred_proba_c1)
+            print('임곗값:',custom_threshold)
+            get_clf_eval(y_test , custom_predict)
+
+    get_eval_by_threshold(y_test ,pred_proba[:,1].reshape(-1,1), thresholds )
+
+# precision_recall_curve를 이용한 재현율,정밀도 곡선
+    def precision_recall_curve_plot(y_test , pred_proba_c1):
+        precisions, recalls, thresholds = precision_recall_curve(y_test, pred_proba_c1)
+        plt.figure(figsize=(8,6))
+        threshold_boundary = thresholds.shape[0]
+        plt.plot(thresholds, precisions[0:threshold_boundary], '--', label='precision')
+        plt.plot(thresholds, recalls[0:threshold_boundary], label='recall')
+        start, end = plt.xlim()
+        plt.xticks(np.round(np.arange(start, end, 0.1),2))
+        plt.xlabel('Threshold value')
+        plt.ylabel('Precision and Recall value')
+        plt.legend()
+        plt.grid()
+        plt.show()
+    precision_recall_curve_plot(y_test, lr_clf.predict_proba(X_test)[:, 1] )
+
+# roc_curve
+    def roc_curve_plot(y_test , pred_proba_c1):
+        fprs , tprs , thresholds = roc_curve(y_test ,pred_proba_c1)
+        plt.plot(fprs , tprs, label='ROC')
+        plt.plot([0, 1], [0, 1], 'k--', label='Random') 
+        start, end = plt.xlim()
+        plt.xticks(np.round(np.arange(start, end, 0.1),2))
+        plt.xlim(0,1); plt.ylim(0,1)
+        plt.xlabel('FPR( 1 - Sensitivity )')
+        plt.ylabel('TPR( Recall )')
+        plt.legend()
+        plt.show()
+
+# 0. 사이킷런 파일 가져오기
+    from sklearn.datasets import load_iris
+    iris = load_iris()
+# 1. 데이터셋트 분리: train, test 로 자르기
+    from sklearn.model_selection import train_test_split
+    iris_data = iris.data
+    iris_label = iris.target
+    X_train, X_test, y_train, y_test =train_test_split(
+        iris_data, iris_label,test_size = 0.2,random_state = 11)
+# 2. df를 자르기: 종속 / 독립 변수로 나눠서 train_test_split한다.
+    y_df = df['target']
+    x_df = df.drop('target', axis = 1)
+    X_train, X_test, y_train, y_test = 
+       train_test_split(x_df, y_df, test_size = 0.2, random_state=0)
+# 3. 모델학습
+    from sklearn.tree import DecisionTreeClassifier
+    dt_clf = DecisionTreeClassifier(random_state = 0)
+    dt_clf.fit(X_train, y_train)
+# 4. 예측수행- test용으로
+    pred = dt_clf.predict(X_test)
+# 5. 평가 
+    from sklearn.metrics import accuracy_score
+    acc = accuracy_score(y_test, pred)
+
+<교차검증, 파라미터 성능향상>
+## 교차검증
+# 1) K_Fold 교차검증
+    from sklearn.model_selection import KFold
+    kfold = KFold(n_splits=5)
+    accuracy = []
+    for train_index, test_index in kfold.split(X_train):
+        X_tr = X_train[train_index]
+        X_te = X_train[test_index]
+        y_tr = y_train[train_index]
+        y_te = y_train[test_index]
+        # 데이터학습 일반화 검증
+        dt_clf = DecisionTreeClassifier(random_state=0)
+        dt_clf.fit(X_tr, y_tr)
+        pred = dt_clf.predict(X_te)
+        acc = accuracy_score(y_te, pred)
+        accuracy.append(acc)
+    print(accuracy)
+
+# 2) StratifiedKFold 교차검증
+    from sklearn.model_selection import StratifiedKFold
+    stk = StratifiedKFold(n_splits=5)
+    accuracy = []
+    for train_index, test_index in stk.split(data, label):
+        X_tr = data[train_index]
+        X_te = data[test_index]
+        y_tr = label[train_index]
+        y_te = label[test_index]
+        dt_clf = DecisionTreeClassifier(random_state=156)
+        dt_clf.fit(X_tr, y_tr)
+        pred = dt_clf.predict(X_te)
+        acc = accuracy_score(y_te, pred)
+        accuracy.append(acc)
+    print(accuracy)
+
+# 3) cross_val_score 교차검증
+    from sklearn.model_selection import cross_val_score, cross_validate,cross_val_predict
+    iris_data = load_iris()
+    dt_clf = DecisionTreeClassifier(random_state= 156)
+    data = iris_data.data
+    label = iris_data.target
+    scores = cross_val_score(dt_clf, data, label, scoring = 'accuracy', cv = 5)
+    print('교차 검증별 정확도: ', np.round(scores, 4))
+    print('평균 검증 정확도: ', np.round(np.mean(scores), 4))
+
+# cross_validate 교차검증 : 평가방법 2개 이상 가능
+    cross_validate(dt_clf, data, label, scoring = ['accuracy', 'roc_auc_ovo'], cv = 5)
+
+# 하이퍼 파라미터의 성능향상: GridSearchCV
+    from sklearn.model_selection import GridSearchCV
+
+    params = {'max_depth' : [None, 6, 8 ,10, 12, 16 ,20, 24], 'min_samples_leaf' : range(1, 11),
+              'min_samples_split' : range(2, 11, 2)}
+    grid_cv = GridSearchCV(dt_clf, param_grid=params, scoring='accuracy', cv=5, verbose=1 )
+    grid_cv.fit(X_train , y_train)
+    print(f'GridSearchCV 최고 정확도 수치:{grid_cv.best_score_:.4f}')
+    print('GridSearchCV 최적 하이퍼 파라미터:', grid_cv.best_params_)
+
+    model = grid_cv.best_estimator_
+    pred = model.predict(X_test)           # 최적 파라미터로 예측하기
+    pred_proba = model.predict_proba(X_test)[:,1]
+    acc = accuracy_score(y_test, pred)
+    auc = roc_auc_score(y_test, pred_proba)
+    print(f'accuracy: {acc:.3f}, roc_auc:{auc:.3f}')
+
+<전처리- 인코딩, 스케일링>
+#  인코딩 : 범주형 문자 --> 수치형으로 바꿈
+    from sklearn.preprocessing import LabelEncoder, OneHotEncoder
+
+# 1) LabelEncoder: 종속변수 또는 독립변수 범주 2개 
+    lbe=LabelEncoder()
+    titanic_df['Sex']=lbe.fit_transform(titanic_df['Sex'])
+# df 전체로도 가능
+    lb_enc.fit(y)                   # fit은 y의 범주 종류를 저장하는 역할
+    label_iris=lb_enc.transform(y)  # 위에서 저장한 범주를 맞는 숫자로 변환
+
+# 2) OneHotEncoder: 3개 이상 독립변수 : 2차원으로 변경해야/희소행렬
+# 방안1)
+    oh=OneHotEncoder(sparse_output=False)
+    C_B=oh.fit_transform(titanic_df[['Cabin','Embarked']])
+    columns=np.hstack(['Cab_' + oh.categories_[0], 'Emb_'+ oh.categories_[1]])
+    titanic_df=pd.concat([titanic_df, pd.DataFrame(C_B, columns=columns)], axis=1)
+# 방안2)
+    items = np.array(items).reshape(-1, 1)
+    oh_encoder = OneHotEncoder()
+    oh_encoder.fit(items)
+    oh_labels = oh_encoder.transform(items)  
+
+# 3) get_dummies - pandas 범주형 변수에서 더미변수를 자동으로 만들어주는 함수
+    pd.get_dummies(df) 
+
+# 데이터 전처리- 표준화 / 수의 값이 끝이 없고, 기본 평균이 정해져있을때
+    from sklearn.preprocessing import StandardScaler
+    cancer = load_breast_cancer()
+    scaler = StandardScaler()
+    data_scaled = scaler.fit_transform(cancer.data)
+
+# 데이터 전처리 -정규화/ 수의 값이 끝이 있을때 :표준화와 모두 같음* 무조건 0-1 사이 값임
+    from sklearn.preprocessing import MinMaxScaler
+    scaler = MinMaxScaler()
+    iris_scaled=scaler.fit_transform(iris_df)
+
+<분류_tree기반>
 1. DecisionTreeClassifier
-
     from sklearn.tree import DecisionTreeClassifier
     X_data = wine.data
     y_data = wine.target
-    X_train, X_test, y_train, y_test = train_test_split(X_data, y_data, 
-                                    test_size=0.2, random_state= 156)
+    X_train, X_test, y_train, y_test = train_test_split(X_data, y_data, test_size=0.2, random_state= 156)
     dt_clf = DecisionTreeClassifier(random_state=156)
     dt_clf.fit(X_train , y_train)
     pred = dt_clf.predict(X_test)
-    accuracy = accuracy_score(y_test , pred)
-    print('결정 트리 예측 정확도: {0:.4f}'.format(accuracy))
-    print('예측 정확도: {0:.4f}'.format(accuracy))
-    print(f1_score(y_test, pred, average='macro'))
-    print( roc_auc_score(y_test, pred_proba, multi_class='ovo'))
+        print( roc_auc_score(y_test, pred_proba, multi_class='ovo'))
 
-# GridSearchCV 하이퍼 파라미터 찾기
+# 1-1. GridSearchCV 하이퍼 파라미터 찾기
     from sklearn.model_selection import GridSearchCV
     parameters = {'criterion':['gini', 'entropy'],'max_depth':[None, 2, 3, 5, 7], 
                     'min_samples_split':[2,3,5,7],'min_samples_leaf':[1,3,5,7]}
@@ -27,11 +265,10 @@
     model = grid_dt.best_estimator_
     pred = model.predict(X_test)
     accuracy_score(y_test, pred)
-    
     print('GridSearchCV 최적 파라미터 :', grid_dt.best_params_)
     print(f'GridSearchCV 최고 정확도 : {grid_dt.best_score_:.4f}')
 
-# 피처 중요도 그래프 .feature_importances_
+# 1-2 피처 중요도 그래프 .feature_importances_
     import seaborn as sns
     import matplotlib.pyplot as plt
     ftr_importances_values = model.feature_importances_
@@ -41,16 +278,16 @@
     plt.title('Feature importances Top 20')
     sns.barplot(x=ftr_top20 , y = ftr_top20.index)
 
-#트리 구조 그래프
+# 1-3 트리 구조 그래프
     from sklearn.tree import plot_tree
     plt.figure(figsize=(10,7), dpi=1200)
     plot_tree(model, filled=True, feature_names=wine.feature_names, 
         class_names=list(wine.target_names))
 
 ## 과적합 확인하는 방법
-    cross_val_score: 학습데이터 평가점수 vs 테스트데이터 평가점수 --> 비슷해야함
-    max_dept 적은 수/ min_samples_split: split 하는 최소 샘플 수/ 
-                      min_samples_leaf: 리프노드에 있을 최소 샘플갯수
+# 과적합 확인하는 방법
+# cross_val_score: 학습데이터 평가점수 vs 테스트데이터 평가점수 --> 비슷해야함
+# max_dept 적은 수/ min_samples_split: split 하는 최소 샘플 수/min_samples_leaf: 리프노드에 있을 최소 샘플갯수
     
     from sklearn.model_selection import cross_val_score
     dt_clf=DecisionTreeClassifier(random_state=0)
@@ -60,7 +297,6 @@
     print('테스트데이터 평가점수',accuracy_score(y_test, dt_clf.predict(X_test)))
 
 2. ensemble 앙상블( 보팅,배킹,부스팅)
-
 <앙상블 학습> 
     1) 보팅 Voting  
         :한 데이터셋 + 분류기 다수:여러가지 알고리즘 사용, 다수결 원칙으로 투표로 결과 예측
@@ -78,14 +314,12 @@
     dt_clf = DecisionTreeClassifier(random_state=0)
     knn_clf= KNeighborsClassifier()
     vo_clf = VotingClassifier( estimators=[('LR',lr_clf), ('DT',dt_clf),
-                ('KNN', knn_clf)] , voting='soft' )
-    
+                ('KNN', knn_clf)] , voting='soft' )  
     X_train, X_test, y_train, y_test = train_test_split(cancer.data, cancer.target, 
                         test_size=0.2 , random_state= 0)
     vo_clf.fit(X_train , y_train)
     pred = vo_clf.predict(X_test)
-    print(f'Voting 분류기 정확도: {accuracy_score(y_test,pred):.4f}')
-    
+    print(f'Voting 분류기 정확도: {accuracy_score(y_test,pred):.4f}')    
     classifiers = [lr_clf, dt_clf, knn_clf]
     for clf in classifiers:
         clf.fit(X_train , y_train)
@@ -96,8 +330,7 @@
 2) ensemble 학습: RandomForestClassifier
     from sklearn.ensemble import RandomForestClassifier
     cancer = load_breast_cancer()
-    X_train, X_test, y_train, y_test = train_test_split(cancer.data, cancer.target, 
-                        test_size=0.2 , random_state= 0)
+    X_train, X_test, y_train, y_test = train_test_split(cancer.data, cancer.target, test_size=0.2 , random_state= 0)
     rf_clf = RandomForestClassifier(random_state=0)
     rf_clf.fit(X_train , y_train)
     pred = rf_clf.predict(X_test)
@@ -106,11 +339,10 @@
 
 # 랜덤포레스트 파이퍼 파라미터 튜닝 GridSearchCV
     params = {'n_estimators':[100], 'max_depth' : [6, 8, 10, 12], 
-                'min_samples_leaf' : [8, 12, 18 ],'min_samples_split' : [8, 16, 20]}
+              'min_samples_leaf' : [8, 12, 18 ],'min_samples_split' : [8, 16, 20]}
     rf_clf = RandomForestClassifier(random_state=0)
     grid_cv = GridSearchCV(rf_clf , param_grid=params , cv=3, n_jobs=-1, verbose=True)
     grid_cv.fit(X_train , y_train)
-    
     print('GridSearchCV 최적 파라미터:', grid_cv.best_params_)
     print(f'GridSearchCV 최고 정확도: {grid_cv.best_score_:.4f}')
     model = grid_cv.best_estimator_
@@ -130,7 +362,7 @@
     cancer = load_breast_cancer()
     X_train, X_test, y_train, y_test = train_test_split(cancer.data, cancer.target, 
                         test_size=0.2 , random_state= 0)
-    gb_clf = GradientBoostingClassifier( n_estimators=200, random_state=0)
+    gb_clf = GradientBoostingClassifier( n_estimators=200,learning_rate=0.05,, random_state=0,verbose=True )
     gb_clf.fit(X_train , y_train)
     gb_pred = gb_clf.predict(X_test)
     gb_accuracy = accuracy_score(y_test, gb_pred)
@@ -142,27 +374,105 @@
 
 5) ensemble 학습: 사이킷런 XGBClassifier   ==> 이걸 함
     from xgboost import XGBClassifier 
+    dataset = load_breast_cancer()
+    cancer_df = pd.DataFrame(data=dataset.data, columns=dataset.feature_names)
+    cancer_df['target'] = dataset.target
+    X_features = cancer_df.iloc[:, :-1]
+    y_label = cancer_df.iloc[:, -1]
+    X_train, X_test, y_train, y_test=train_test_split(X_features, y_label,test_size=0.2, random_state=156 )
+    X_tr, X_val, y_tr, y_val= train_test_split(X_train, y_train,test_size=0.1, random_state=156 )
     xgb_wrapper = XGBClassifier(n_estimators=400, learning_rate=0.1, max_depth=3)
-    xgb_wrapper = XGBClassifier(n_estimators=400, learning_rate=0.1,
-                    max_depth=3)  
     evals = [(X_val, y_val)]
-    xgb_wrapper.fit(X_train, y_train, early_stopping_rounds = 100,early_stopping_rounds=주의!!!, 
-                        eval_metric = "logloss", eval_set=evals, verbose=30)
+    xgb_wrapper.fit(X_tr, y_tr, eval_metric = "logloss",early_stopping_rounds=10,eval_set=evals)
     preds = xgb_wrapper.predict(X_test)
     pred_proba = xgb_wrapper.predict_proba(X_test)[:, 1]
-    
-    # xgb_wrapper.feature_importances_ 로 그래프 그릴 수 있음
+    accuracy_score(y_test, pred)
+
+# xgb_wrapper.feature_importances_ 로 그래프
+    ftr_importances_values = xgb_wrapper.feature_importances_
+    ftr_importances = pd.Series(ftr_importances_values, index=cancer.feature_names )
+    ftr_top20 = ftr_importances.sort_values(ascending=False)[:20]
+    plt.figure(figsize=(8,6))
+    plt.title('Feature importances Top 20')
+    sns.barplot(x=ftr_top20 , y = ftr_top20.index)
 
 6) 스태킹 앙상블
+# 4개의 모델(KNN, RF, Ada, DT)를 통해 개별 예측/최종 Logistic 모델을 사용하여 예측 
+    from sklearn.ensemble import StackingClassifier
+
+    from sklearn.ensemble import StackingClassifier
+    from sklearn.naive_bayes import GaussianNB
+    from sklearn.tree import DecisionTreeClassifier
+    from sklearn.neighbors import KNeighborsClassifier
+    from sklearn.linear_model import LogisticRegression
+
+    stack = StackingClassifier([('Gaus', GaussianNB()),
+                                ('DT', DecisionTreeClassifier(random_state=0)),
+                                ('Knn', KNeighborsClassifier())],
+                            final_estimator=LogisticRegression(random_state=0),stack_method='predict')
+    stack.fit(X_train, y_train)
+    pred = stack.predict(X_test)
+    pred_proba = stack.predict_proba(X_test)
+
+    get_clf_eval(y_test, pred, pred_proba)
+
+<분류-tree외>
+
+# 1. 로지스틱 회귀: 시그모이드함수를 생성하고 입력값이 0인지 1인지 예측하여 수랭
+    lr_clf = LogisticRegression()
+    lr_clf.fit(X_train, y_train)
+    pred = lr_clf.predict(X_test)
+    pred_proba = lr_clf.predict_proba(X_test)[:,1]
+    acc = accuracy_score(y_test, pred)
+    auc = roc_auc_score(y_test, pred_proba)
+    print(f'accuracy: {acc:.3f}, roc_auc:{auc:.3f}')
+
+# 1-1 최적의 파라미터
+    from sklearn.model_selection import GridSearchCV
+    params={'solver':['liblinear', 'lbfgs'],'penalty':['l2', 'l1'],'C':[0.01, 0.1, 1, 5, 10]}
+    lr_clf = LogisticRegression()
+    grid_clf = GridSearchCV(lr_clf, param_grid=params, scoring='accuracy', cv=3 )
+    grid_clf.fit(cancer.data, cancer.target)
+    print(f'최적 하이퍼 파라미터:{grid_clf.best_params_}') 
+    print(f'최대 평균 정확도:{grid_clf.best_score_:.3f}')
+    # GridSearchCV 결과보기
+    pd.DataFrame(grid_clf.cv_results_)[['mean_test_score', 'rank_test_score']] # 필요한 파라미터로
+    lr_clf.coef_, lr_clf.intercept_   # 주의! 되나 봐야함
 
 
+# 2. 최근접 이웃
+    from sklearn.neighbors import KNeighborsClassifier
+    knn = KNeighborsClassifier(n_neighbors=7, metric='euclidean')
+    knn.fit(X_train, y_train)
+    pred = knn.predict(X_test)
+    pred_proba = knn.predict_proba(X_test)[:,1]
+    acc = accuracy_score(y_test, pred)
+    auc = roc_auc_score(y_test, pred_proba)
+    print(f'accuracy: {acc:.3f}, roc_auc:{auc:.3f}')
 
+# 3. 서포트 벡터 머신(KVM)
+    from sklearn.svm import SVC, SVR
+    svc = SVC(probability = True)   # pred_proba 구할 경우 True
+    svc.fit(X_train, y_train)
+    pred = svc.predict(X_test)
+    pred_proba = svc.predict_proba(X_test)[:,1]
+    acc = accuracy_score(y_test, pred)
+    auc = roc_auc_score(y_test, pred_proba)
+    print(f'accuracy: {acc:.3f}, roc_auc:{auc:.3f}')
 
+# 3-1. kernel 비교하기
+    kernels = ['rbf', 'linear', 'poly', 'sigmoid']
+    for kernel in kernels:
+        print(kernel)
+        svc = SVC(kernel=kernel, probability = True)
+        svc.fit(X_train, y_train)
+        pred = svc.predict(X_test)
+        pred_proba = svc.predict_proba(X_test)[:,1]
+        acc = accuracy_score(y_test, pred)
+        auc = roc_auc_score(y_test, pred_proba)
+        print(f'accuracy: {acc:.3f}, roc_auc:{auc:.3f}')
 
-
-lr_clf.coef_, lr_clf.intercept_
-
-
-
-
-
+# 3-2. 파라미터 찾기 GridSearchCV
+    params = {'C' : [0.01, 0.1, 1, 2, 5],'gamma' : [0.01, 0.05,0.1, 0.5, 1, 2, 5]}
+    grid_cv = GridSearchCV(svc, param_grid=params, scoring='accuracy', cv = 3, verbose=True)
+    grid_cv.fit(X_train, y_train)
