@@ -178,3 +178,22 @@ clean_dataset(X_features_ohe)
 3) split 에러 해결 -라이브러리 업그레이드/ cmd에서
 # pip install -U threadpoolctl
 
+
+<전처리>
+
+** type 변환 함수
+def isFloat(value):
+    try:
+        num=float(value)
+        return num
+    except ValueError:
+        return np.NaN
+        
+ ** 여러 단위가 섰여 있는 object를 숫자와 .만으로 자르기            
+def split_num(x):
+    x=str(x)
+    for i,j in enumerate(x):
+        if j not in '0123456789.':
+            cut=i
+            break
+    return x[:cut]        

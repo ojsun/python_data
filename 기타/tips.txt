@@ -1,0 +1,25 @@
+
+1. 괄호, 따옴표 자동 완성
+from notebook.services.config import ConfigManager
+c = ConfigManager()
+c.update('notebook', {"CodeCell": {"cm_config": {"autoCloseBrackets": True}}})
+
+2. 그래프
+sns.barplot(x=data['class'].value_counts().index, 
+
+3.스케일링 
+ StandardScaler : 평균0, 분산1 /이상치 영향 많음, 정규분포 따름
+ MinMaxScaler  : 0-1 사이값/이상치 영향 받음/ 데이터의 기존 분포 담아냄
+ RobustScaler  : 사분위값 사용/이상치 영향 별로/ 데이터 범위 넓게/ 
+** 스케일링 대상에서 종속변수는 제외해야/ 스케일링 전에 tran,test세트 나누어야
+# 예) MinMaxScaler() 스케일링
+mm_scaler=MinMaxScaler()
+mm_scaler.fit(X_train)
+X_train_scaled=mm_scaler.transform(X_train)
+X_test_scaled=mm_scaler.transform(X_test)
+
+4.종속변수 범주형/ 복잡할때
+1)data['class']=data['class'].map({'<=50K': 0, '>50k': 1}) :안됨
+2)from sklearn.preprocessing import LabelEncoder :됨
+lbe=LabelEncoder()
+data['class']=lbe.fit_transform(data['class'])

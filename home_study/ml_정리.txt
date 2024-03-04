@@ -1,0 +1,151 @@
+<4장 선형회귀 -지도, 연속형변수 예측>
+종속변수(연속형 변수)를 예측해내는 것이 목표
+/쉽고,간단,속도/예측력 떨어짐/선형관계를 전제/다른 모델과의 비교등 베이스모델
+
+from sklearn.linear_model import LinearRegression
+model.coef_   # 회귀계수 1에 가까울 수록 정확
+pd.Series(model.coef_, index=X.columns)  # 테이블로 확인
+model.intercept_   # y절편값
+
+<5장 로지스틱 회귀-지도, 이진 분류>
+선형회귀 분석을 기반으로 하나 이진 분류를 주로함
+쉬움/ 계수를 통해 각 변수의 중요성 파악// 선형관계가 아니면 예측력 떨어짐
+from sklearn.linear_model import LogisticRegression
+
+<6장 K-최근접이웃(KNN)>지도, 분류
+거리기반 모델/K개의 가장 가까운 이웃데이터에 의해 예측
+다중분류(3가지 이상 목표값) 문제에 자주 사용되는 베이스 모델
+선형 관계에서 자유로움/작관적/간단//데이터가 크면 늦어짐/이상치에 취약
+
+knn=KNeighborsClassifier(n_neighbors=13)
+knn.fit(X_train_scaled, y_train)
+pred=knn.predict(X_test_scaled)
+accuracy_score(y_test, pred)
+--> n_neighbors 갯수 중요하므로 최적찾기 for문 사용
+
+
+<8장 결정트리: tree 기본 모델-분류>
+예측력,선능 별로/ 설명력은 좋음/ 데이터에대한 가정 없음/이상치 영향 없음/과적합
+-전처리에서 이상치처리 안함
+
+
+<9장 랜덤포레스트: 지도, 회귀예측> 종소변수: 범주형/ 수치형
+결정트리와 비슷하나 과적합 문제 별로/ 모델해석 어려움, 결정트리보다 느린편
+/이상치 영향 적음  *전처리에서 이상치처리 안함
+from sklearn.ensemble import RandomForestClassifier,RandomForestRegressor
+
+model=RandomForestRegressor(random_state=100)
+model.fit(X_train, y_train)
+train_pred=model.predict(X_train)
+test_pred=model.predict(X_test)
+
+<10장 XGBoost : tree 지도, 분류>
+이전 학습한 결과을 다음 트리에 반영(가중치) 연속성 있는 트리를 만들어 분류
+예측속도 빠름/예측력 좋음/ 변수 종류 많고 데이터가 클수록 뛰어난 성능
+해석 어려움/ 하이퍼파라미터 튜닝 어려움/ 거의 모든 표 데이터에활용 가능
+
+
+
+
+<12장 K-평균 군집화>
+클러스터 수는 가급적 적게, 동시에 inertia(거리의 합)는 작게 -> 적절한 K값 설정 필요
+
+from sklearn.cluster import KMeans
+kmeans_model=KMeans(n_clusters=3, random_state=100)
+kmeans_model.fit(data)
+kmeans_model.predict(data)
+data['label']=kmeans_model.predict(data)
+sns.scatterplot(x='var_1',y='var_2', data=data, hue='label', palette='rainbow')
+
+# 엘보우 기법(elbow_method): 적합한 k 구하기
+distance=[]
+for k in range(2,10):
+    k_model=KMeans(n_clusters=k)
+    k_model.fit(data)
+    distance.append(k_model.inertia_)
+sns.lineplot(x=range(2,10), y=distance)
+
+# 엘보우로 찾기 어려울때 -> 실루엣계수(높을 수록 좋음)
+from sklearn.metrics import silhouette_score
+silhouette=[]
+for k in range(2,10):
+    k_model=KMeans(n_clusters=k)
+    k_model.fit_transform(scaled_df)
+    labels=k_model.predict(scaled_df)
+    silhouette.append(silhouette_score(scaled_df, labels))
+sns.lineplot(x=range(2,10), y=silhouette)
+
+# 최종 예측모델 및 결과해석
+k_model=KMeans(n_clusters=4)
+k_model.fit(scaled_df)
+labels=k_model.predict(scaled_df)
+scaled_df['label']=labels
+   # 평균과 고객수를 계산하여 한 df에 넣기
+scaled_df_mean=scaled_df.groupby('label').mean()
+scaled_df_count=scaled_df.groupby('label').count()['category_travel']
+   # count만하면 전체df에 값은 값만 출력/ 아무거나 한 컬럼으로 갯수세기
+scaled_df_count=scaled_df_count.rename('count')
+scaled_df_all=scaled_df_mean.join(scaled_df_count)
+
+<13장 차원축소: 주성분분석(PCA)>
+변수의 갯수는 줄이되 그 특성을 가능한 보존하는 기법
+->시각화,모델링 효과 개선/변수간 상관계문제 해결/오버피팅문제 해결
+ //정보손실/결과해석 어려움
+
+#1 일반 비지도학습 차원축소
+from sklearn.decomposition import PCA
+pca=PCA(n_components=2)
+data_pca=pca.fit_transform(X)
+data_pca=pd.DataFrame(data_pca, columns=['PC1','PC2'])
+data_pca=data_pca.join(y)
+# 확인: 주성분과 변수들간의 관계(거리)
+pca.components_
+df_data=pd.DataFrame(pca_model.components_, columns=X.columns)
+sns.heatmap(df_data, cmap='coolwarm')
+
+#2 차원축소로 학습시간 줄이고 성능향상시키기 : 지도학습에서 사용
+X_train, X_test, y_train, y_test=train_test_split(data.drop('class',axis=1),data['class'], test_size=0.2, random_state=100)
+scale=StandardScaler()
+scale.fit(X_train)
+X_train_scaled=scale.transform(X_train)
+X_testscaled=scale.transform(X_test)
+model_rf=RandomForestClassifier(random_state=100)
+model_rf.fit(X_train_scaled, y_train)
+pred_1=model_rf.predict(X_test_scaled)
+accuracy_score(y_test,pred_1)
+
+# 확인: 원본데이터 반영 비율 확인: pca.eaplained_variance_ratio_
+# 적당한 차원축소 갯수 정하기
+var_ratio=[]
+for i in range(100,500,50):
+    pca=PCA(n_components=i)
+    pca.fit_tranform(X_train_scaled)
+    ratio=pca.eaplained_variance_ratio_.sum()
+    var_ratio.append(ratio)
+sns.lineplot(x=range(100,500,50), y=var_ratio)
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
