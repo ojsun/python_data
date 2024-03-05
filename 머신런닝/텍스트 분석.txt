@@ -59,7 +59,7 @@ print(stemmer.stem('working'))
 (2) 피처 벡터화/추출(BOW : CountVectorizer/TfidfVectorizer)
 2-1. 카운트 기반의 벡터화: CountVectorizer
 파라미터: max_df 높은 빈도수 허용치/min_df 낮은 빈도수 제외치/max_features 허용 피처 개수/
-         n_gram_range 튜틀형태 단어갯수/ token_pattern 정규표현식 패턴 지정
+         n_gram_range 튜틀형태 단어갯수/ token_pattern 정규표현식 패턴 지정 /stop_words
 
 # 셋트 만들기
 from sklearn.datasets import fetch_20newsgroups
@@ -85,7 +85,7 @@ pred=lr_clf.predict(X_test_cnt_vct)
 print('예측 정확도 : ', accuracy_score(y_test, pred))
 
 2-2. TF-IDF: TfidfVectorizer
- (자주 나오는 단어에 가중치/모든 문서에서 자주나오는 단어에 패럴티)
+      (자주 나오는 단어에 가중치/모든 문서에서 자주나오는 단어에 패럴티)
 from sklearn.feature_extraction.text import TfidfVectorizer
 tfdf_vct=TfidfVectorizer(max_df = 0.85, stop_words='english',
          max_features=3000,ngram_range=(1,2),token_pattern='[a-zA-Z]+')
@@ -148,10 +148,12 @@ words = []
 for sentence in sentences:
     word = okt.morphs(sentence)
     words.append(word)
+
 print(words[:2])
-test_text = '나는 정말로 파이썬을 좋아한다. 아니 머신러닝을 더 좋아한다.'
-print('normalize :', okt.normalize(test_text)) # 문장으로 추출
-print('morphs :', okt.morphs(test_text))       # 구문 분석
-print('nouns :', okt.nouns(test_text))         # 명사만
-print('phrases :', okt.phrases(test_text))     # 구문
-print('pos :', okt.pos(test_text))             # 품사와 함께 값고 함께 
+print('normalize :', okt.normalize(text)) # 문장으로 추출
+print('morphs :', okt.morphs(text))       # 구문 분석
+print('nouns :', okt.nouns(text))         # 명사만
+print('phrases :', okt.phrases(text))     # 구문
+print('pos :', okt.pos(text))             # 품사와 함께 출력
+
+
