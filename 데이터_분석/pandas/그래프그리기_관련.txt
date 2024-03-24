@@ -6,9 +6,10 @@ import matplotlib.pyplot as plt
 import warnings
 
 plt.rcParams['figure.figsize']=(4,3)  # figure 사이즈 변경
+sns.set_palette('Paired')
 
 warnings.filterwarnings('ignore')
-sns.set_palette('Paired')
+
 
 
 #한글 폰트 적용하기/ 보통  맑은 고딕체 사용
